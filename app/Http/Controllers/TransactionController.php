@@ -22,11 +22,12 @@ class TransactionController extends Controller
 
         if ($s = $request->query('s')) {
             $query->where(function($q) use ($s) {
-                $q->where('title', 'like', "%{$s}%")
-                  ->orWhere('notes', 'like', "%{$s}%")
-                  ->orWhere('category', 'like', "%{$s}%");
+                $q->where('title', 'ilike', "%{$s}%")
+                ->orWhere('notes', 'ilike', "%{$s}%")
+                ->orWhere('category', 'ilike', "%{$s}%");
             });
         }
+
 
         if ($type = $request->query('type')) {
             if (in_array($type, ['income','expense'])) {
