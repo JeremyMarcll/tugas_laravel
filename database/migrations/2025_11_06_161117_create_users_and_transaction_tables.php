@@ -12,11 +12,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade'); // relasi ke users
             $table->string('title');
-            $table->text('notes')->nullable(); // bisa menampung HTML dari editor (trix, dll)
+            $table->text('notes')->nullable(); // catatan tambahan
             $table->enum('type', ['income', 'expense']); // tipe transaksi
             $table->decimal('amount', 15, 2); // jumlah nominal
-            $table->date('occurred_at')->nullable(); // tanggal kejadian
-            $table->string('cover_path')->nullable(); // path gambar (opsional)
+            $table->date('occurred_at')->nullable(); // tanggal transaksi
+            $table->string('bukti')->nullable(); // path bukti pembayaran
             $table->string('category')->nullable(); // kategori transaksi
             $table->timestamps(); // created_at dan updated_at
         });

@@ -17,11 +17,14 @@ class Transaction extends Model
         'type',
         'amount',
         'occurred_at',
-        'cover_path',
         'category',
+        'bukti',
     ];
 
-    protected $dates = ['occurred_at'];
+    protected $casts = [
+    'occurred_at' => 'datetime',
+];
+
 
     // relation to user
     public function user()

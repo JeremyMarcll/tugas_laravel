@@ -15,7 +15,7 @@ class TransactionController extends Controller
         $this->middleware('auth');
     }
 
-    // list with search, filter, pagination + statistik
+    // List transaksi dengan filter, search, pagination, dan statistik
     public function index(Request $request)
     {
         $query = Transaction::where('user_id', Auth::id());
@@ -38,17 +38,14 @@ class TransactionController extends Controller
             $query->where('category', $cat);
         }
 
-        // Pagination 20 data per halaman
         $transactions = $query->orderBy('occurred_at','desc')->paginate(20)->withQueryString();
 
-        // Statistik total income vs expense
         $stats = Transaction::where('user_id', Auth::id())
             ->selectRaw("type, SUM(amount) as total")
             ->groupBy('type')
             ->pluck('total','type')
             ->toArray();
 
-        // Statistik bulanan untuk chart
         $monthly = Transaction::where('user_id', Auth::id())
             ->selectRaw("
                 DATE_TRUNC('month', occurred_at) as month,
@@ -76,12 +73,15 @@ class TransactionController extends Controller
             'amount' => 'required|numeric',
             'occurred_at' => 'nullable|date',
             'category' => 'nullable|string|max:100',
-            'cover' => 'nullable|image|max:2048',
+            'bukti' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
         ]);
 
-        if ($request->hasFile('cover')) {
-            $path = $request->file('cover')->store('transactions', 'public');
-            $data['cover_path'] = $path;
+        // Tanggal otomatis jika kosong
+        $data['occurred_at'] = $data['occurred_at'] ?? now();
+
+        // Upload bukti jika ada
+        if ($request->hasFile('bukti')) {
+            $data['bukti'] = $request->file('bukti')->store('transactions', 'public');
         }
 
         $data['user_id'] = Auth::id();
@@ -108,15 +108,18 @@ class TransactionController extends Controller
             'amount' => 'required|numeric',
             'occurred_at' => 'nullable|date',
             'category' => 'nullable|string|max:100',
-            'cover' => 'nullable|image|max:2048',
+            'bukti' => 'nullable|file|mimes:jpeg,png,jpg,pdf|max:2048',
         ]);
 
-        if ($request->hasFile('cover')) {
-            if ($transaction->cover_path) {
-                Storage::disk('public')->delete($transaction->cover_path);
+        // Tanggal otomatis jika kosong
+        $data['occurred_at'] = $data['occurred_at'] ?? ($transaction->occurred_at ?? now());
+
+        // Hapus file lama jika ada dan upload baru
+        if ($request->hasFile('bukti')) {
+            if ($transaction->bukti) {
+                Storage::disk('public')->delete($transaction->bukti);
             }
-            $path = $request->file('cover')->store('transactions', 'public');
-            $data['cover_path'] = $path;
+            $data['bukti'] = $request->file('bukti')->store('transactions', 'public');
         }
 
         $transaction->update($data);
@@ -128,9 +131,11 @@ class TransactionController extends Controller
     {
         $this->authorize('delete', $transaction);
 
-        if ($transaction->cover_path) {
-            Storage::disk('public')->delete($transaction->cover_path);
+        // Hapus file bukti jika ada
+        if ($transaction->bukti) {
+            Storage::disk('public')->delete($transaction->bukti);
         }
+
         $transaction->delete();
 
         return redirect()->route('transactions.index')->with('success', 'Transaksi dihapus.');
